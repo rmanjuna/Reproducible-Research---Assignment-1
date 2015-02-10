@@ -1,0 +1,101 @@
+---
+title: 'Reproducible Research: Peer Assessment 1'
+author: "Rajesh"
+date: "Friday, February 06, 2015"
+output: html_document
+---
+Loading and preprocessing the data
+
+````{r}
+data <- read.csv("C:\\Users\\rmanjuna\\Desktop\\coursera\\reproducible research\\Activity Monitoring Data\\activity.csv")
+```
+
+What is mean total number of steps taken per day?
+
+```{r}
+stepsTotalPerDay <- tapply(data$steps, data$date, sum)
+
+hist(stepsTotalPerDay, breaks = 6, main = "Frequency of number of steps per day", 
+    xlab = "Number of steps per day", ylab = "Frequency")
+
+stepsMeanPerDay <- tapply(data$steps, data$date, mean, na.rm = T)
+
+stepsMedianPerDay <- tapply(data$steps,data$date,median,na.rm=T)
+
+```
+
+What is the average daily activity pattern?
+
+```{r}
+stepsMeanPerInterval <- tapply(data$steps, data$interval, mean, na.rm = T)
+
+plot(stepsMeanPerInterval, type = "l", main = ("Steps vs. Interval (daily average)"), 
+    ylab = "# of steps")
+
+seq(along = stepsMeanPerInterval)[stepsMeanPerInterval == max(stepsMeanPerInterval)]
+
+```
+
+Imputing missing values
+
+```{r}
+sum(as.numeric(is.na(data$steps)))
+
+
+# Get the steps mean per interval as a vector
+temp_stepsMeanPerInterval <- as.vector(stepsMeanPerInterval)
+# Repeat it to be the same for each of the 61 days
+temp_stepsMeanPerInterval <- rep(temp_stepsMeanPerInterval, 61)
+# Set it one where there is no missin data
+temp_stepsMeanPerInterval[!is.na(data$steps)] = 1
+
+# Get the steps data as a vector
+temp_dataTest <- as.vector(data$steps)
+# Set it to one where data is missing
+temp_dataTest[is.na(temp_dataTest)] = 1
+
+data_NoMissing <- data
+data_NoMissing$steps <- temp_stepsMeanPerInterval * temp_dataTest
+
+
+# stepsMeanPerDay_NoMissing <-
+# tapply(data_NoMissing$steps,data_NoMissing$date,mean,na.rm=T)
+# stepsMedianPerDay_NoMissing <-
+# tapply(data_NoMissing$steps,data_NoMissing$date,median,na.rm=T)
+
+stepsTotalPerDay_NoMissing <- tapply(data_NoMissing$steps, data_NoMissing$date, 
+    sum)
+hist(stepsTotalPerDay_NoMissing, breaks = 6, main = "Frequency of number of steps per day", 
+    xlab = "Number of steps per day", ylab = "Frequency")
+
+```
+
+Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+# Create a factor variable with two levels (weekday, weekend-day)
+tempLT <- as.POSIXlt(data$date, format = "%Y-%m-%d")
+tempWeekDays <- tempLT$wday
+tempWeekDays[tempWeekDays == 0] = 0
+tempWeekDays[tempWeekDays == 6] = 0
+tempWeekDays[tempWeekDays != 0] = 1
+tempWeekDaysFactor <- factor(tempWeekDays, levels = c(0, 1))
+# Add the factor variable to the data
+data$WD <- tempWeekDaysFactor
+# Calculate the mean
+stepsMeanPerWeekday <- tapply(data$steps, list(data$interval, data$WD), mean, 
+    na.rm = T)
+
+par(mfrow = c(2, 1))
+# Display the 2 plots
+with(data, {
+    par(mai = c(0, 1, 1, 0))
+    plot(stepsMeanPerWeekday[, 1], type = "l", main = ("Steps vs. Interval"), 
+        xaxt = "n", ylab = "Week ends")
+    title = ("# of Steps v.s. Interval")
+    par(mai = c(1, 1, 0, 0))
+    plot(stepsMeanPerWeekday[, 2], type = "l", xlab = "Interval", ylab = "Week days")
+
+})
+```
+
